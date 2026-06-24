@@ -348,6 +348,56 @@
   .cam-loading { position:absolute; inset:0; background:rgba(0,0,0,.9); display:flex; align-items:center; justify-content:center; z-index:10; }
   .cam-loading span { font-size:10px; color:var(--g3); letter-spacing:2px; }
 
+  /* ── GUIDE MODAL ── */
+  .guide-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,.82); z-index:10000;
+    display:flex; align-items:center; justify-content:center; padding:16px;
+  }
+  .guide-modal {
+    background:#050e05; border:1px solid var(--g3); max-width:640px; width:100%;
+    max-height:88vh; display:flex; flex-direction:column; position:relative;
+    box-shadow:0 0 40px rgba(0,255,65,.08);
+  }
+  .guide-modal-hdr {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:6px 12px; background:var(--g3); border-bottom:1px solid var(--g4); flex-shrink:0;
+  }
+  .guide-modal-title { font-family:'VT323',monospace; font-size:20px; color:var(--amb); letter-spacing:3px; }
+  .guide-modal-sub { font-size:9px; color:var(--g3); letter-spacing:2px; }
+  .guide-close {
+    background:none; border:1px solid #1a4a1a; color:var(--g3); font-family:var(--font);
+    font-size:14px; width:26px; height:26px; cursor:pointer; display:flex; align-items:center;
+    justify-content:center; flex-shrink:0; transition:all .12s; letter-spacing:0;
+  }
+  .guide-close:hover { background:#1a3a1a; border-color:var(--g); color:var(--g); }
+  .guide-body { overflow-y:auto; padding:12px 14px; flex:1; min-height:0; }
+  .guide-section { margin-bottom:18px; }
+  .guide-section:last-child { margin-bottom:0; }
+  .guide-section-hdr {
+    font-size:10px; color:var(--bc); letter-spacing:3px;
+    border-bottom:1px solid #0a2a0a; padding-bottom:4px; margin-bottom:8px;
+  }
+  .guide-p { font-size:11px; color:#3a8a3a; line-height:1.9; margin-bottom:5px; }
+  .guide-p b { color:var(--g); font-weight:normal; }
+  .guide-p .amb { color:var(--amb); }
+  .guide-row { display:flex; gap:8px; margin-bottom:4px; font-size:11px; line-height:1.7; }
+  .guide-key { color:var(--amb); min-width:96px; flex-shrink:0; }
+  .guide-val { color:#3a8a3a; flex:1; }
+  .guide-tip { font-size:10px; color:#2a5a2a; letter-spacing:1px; border-left:2px solid #1a4a1a; padding-left:8px; margin-top:6px; line-height:1.8; }
+  .guide-kbd {
+    display:inline-block; background:#0a1a0a; border:1px solid var(--g3); color:var(--g);
+    font-family:var(--font); font-size:10px; padding:0 5px; line-height:1.6;
+  }
+  .guide-hint { font-size:9px; color:var(--g3); letter-spacing:2px; text-align:center; padding-top:10px; border-top:1px solid #0a1a0a; margin-top:10px; }
+
+  /* ── GUIDE BUTTON ── */
+  .btn-guide {
+    background:none; border:1px solid #1a4a1a; color:#2a6a2a; font-family:var(--font);
+    font-size:11px; padding:2px 8px; cursor:pointer; letter-spacing:2px;
+    transition:all .12s; flex-shrink:0;
+  }
+  .btn-guide:hover { background:#0a2a0a; border-color:var(--g); color:var(--g); }
+
   /* ── RESPONSIVE ── */
   @media (max-width:900px) {
     html,body { overflow:auto; }
@@ -489,9 +539,123 @@ function parseCamInput(raw) {
   return null; // unrecognized
 }
 
+// ─── GUIDE PANEL ─────────────────────────────────────────────────────────────
+
+function GuidePanel({ onClose }) {
+  // Close on overlay click or ESC key
+  useEffect(() => {
+    const onKey = e => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  return (
+    <div className="guide-overlay" onClick={onClose}>
+      <div className="guide-modal" onClick={e => e.stopPropagation()}>
+
+        <div className="guide-modal-hdr">
+          <div>
+            <div className="guide-modal-title">OPERATOR GUIDE</div>
+            <div className="guide-modal-sub">GITMO RADIO // TACTICAL OPS CONSOLE</div>
+          </div>
+          <button className="guide-close" onClick={onClose} title="Close (Esc)">✕</button>
+        </div>
+
+        <div className="guide-body">
+
+          {/* GETTING STARTED */}
+          <div className="guide-section">
+            <div className="guide-section-hdr">◈ GETTING STARTED</div>
+            <p className="guide-p">
+              GITMO RADIO is a <b>single HTML file</b> — no install, no server needed for most features.
+              Just open it in any modern browser (Chrome or Firefox recommended) and everything loads automatically.
+            </p>
+            <p className="guide-p">
+              Weather, radio stations, maps, and Windy cams all work directly from your computer.
+              <span className="amb"> YouTube live cams require HTTPS</span> — they won't load when you open the file
+              directly. See <b>HOSTING</b> below to go live in minutes for free.
+            </p>
+          </div>
+
+          {/* SECTORS */}
+          <div className="guide-section">
+            <div className="guide-section-hdr">◈ SECTORS</div>
+            <p className="guide-p">
+              A <b>Sector</b> is your active location — it controls weather data, the tactical map center, radar position, and suggested live cams.
+            </p>
+            <div className="guide-row"><span className="guide-key">PRESET LIST</span><span className="guide-val">10 pre-built cities (Gitmo Bay, Tokyo, Arctic, Diego Garcia, Paris, Santo Domingo, Miami, Valencia, Tours, Dubai). Click any to activate.</span></div>
+            <div className="guide-row"><span className="guide-key">CITY SEARCH</span><span className="guide-val">Type any city name in the search box and press Enter or ⊕. A dropdown shows matches — click one to set it as your sector.</span></div>
+            <div className="guide-row"><span className="guide-key">GPS 📍</span><span className="guide-val">Click the GPS button to pull your device's current location. Browser will ask permission. Shows GPS LOCKED ✓ when acquired.</span></div>
+            <div className="guide-tip">Switching sectors does not reset your live cam setup — cameras stay where you left them.</div>
+          </div>
+
+          {/* RADIO */}
+          <div className="guide-section">
+            <div className="guide-section-hdr">◈ RADIO // COMMS MODULE</div>
+            <p className="guide-p">The radio panel is in the lower-left. It has two tabs: <b>STATIONS</b> and <b>⚙ SYS.CONFIG</b>.</p>
+            <div className="guide-row"><span className="guide-key">GENRES</span><span className="guide-val">Lo-Fi · Synthwave · Jazz · Electronic · Ambient · Chillout · Drum+Bass · Classical. Click a pill to switch. Stations reload automatically from Radio Browser (free, no key needed).</span></div>
+            <div className="guide-row"><span className="guide-key">STATIONS</span><span className="guide-val">Up to 8 stations are listed. Click any to tune in immediately. The active station is highlighted in amber.</span></div>
+            <div className="guide-row"><span className="guide-key">PLAY / PAUSE</span><span className="guide-val">▶ / ■ button at the bottom. Volume slider is next to it. If a station drops out, it auto-advances to the next one.</span></div>
+            <div className="guide-row"><span className="guide-key">SOUNDCLOUD</span><span className="guide-val">Go to ⚙ SYS.CONFIG → set mode to SOUNDCLOUD → paste any SoundCloud track or playlist URL → LOAD SC STREAM. The embedded player appears in the STATIONS tab.</span></div>
+            <div className="guide-row"><span className="guide-key">LOCAL FILE</span><span className="guide-val">SYS.CONFIG → FILE mode → click LOAD LOCAL AUDIO to pick an MP3, OGG, or WAV from your computer.</span></div>
+            <div className="guide-row"><span className="guide-key">STREAM URL</span><span className="guide-val">SYS.CONFIG → URL mode → paste any Icecast or HTTP stream URL and press TUNE IN.</span></div>
+          </div>
+
+          {/* LIVE CAMS */}
+          <div className="guide-section">
+            <div className="guide-section-hdr">◈ LIVE CAMS</div>
+            <p className="guide-p">The LIVECAM panel is in the lower-right. You can show 1–4 camera panes at once.</p>
+            <div className="guide-row"><span className="guide-key">PANES</span><span className="guide-val">Click 1 / 2 / 3 / 4 to set how many cameras show. Each count has multiple layout options — pick from the LAYOUT buttons.</span></div>
+            <div className="guide-row"><span className="guide-key">SELECT A SLOT</span><span className="guide-val">Click any camera pane to select it (amber outline). Then use the editor below to set its source.</span></div>
+            <div className="guide-row"><span className="guide-key">WINDY 🌬</span><span className="guide-val">Recommended. Paste a Windy webcam page URL (windy.com/webcams/…) or just the numeric ID. Works from file:// and anywhere.</span></div>
+            <div className="guide-row"><span className="guide-key">YOUTUBE ▶</span><span className="guide-val">Paste a YouTube video URL or the 11-character video ID. Requires HTTPS hosting to display.</span></div>
+            <div className="guide-row"><span className="guide-key">MJPEG 📷</span><span className="guide-val">Paste a direct MJPEG or image stream URL (e.g. http://…/cam.mjpeg). Shows SIGNAL LOST if the stream goes offline.</span></div>
+            <div className="guide-row"><span className="guide-key">IFRAME 🔗</span><span className="guide-val">Any embeddable URL — EarthCam, SkylineWebcams, custom embed pages.</span></div>
+            <div className="guide-row"><span className="guide-key">AUTO-DISCOVER</span><span className="guide-val">Click ⊕ AUTO to automatically fill all slots with nearby Windy webcams. Requires a free Windy API key (add it in SYS.CONFIG).</span></div>
+            <div className="guide-row"><span className="guide-key">↗ BROWSE</span><span className="guide-val">Opens Windy's webcam map centered on the active sector so you can find real cam IDs to paste in.</span></div>
+          </div>
+
+          {/* WEATHER & MAPS */}
+          <div className="guide-section">
+            <div className="guide-section-hdr">◈ WEATHER {'&'} MAPS</div>
+            <div className="guide-row"><span className="guide-key">TACTICAL MAP</span><span className="guide-val">Windy.com wind overlay — ECMWF model, surface level. Updates with the active sector. Pan and zoom freely.</span></div>
+            <div className="guide-row"><span className="guide-key">RADAR</span><span className="guide-val">Animated precipitation radar from RainViewer. Auto-plays through recent frames. Use ◀ ▶ to step manually, ⏸ PAUSE to freeze on a frame.</span></div>
+            <div className="guide-row"><span className="guide-key">CONDITIONS</span><span className="guide-val">Live weather from Open-Meteo (no API key needed) — current temp, feels-like, wind speed and direction, humidity, 4-day forecast, and sunrise/sunset times.</span></div>
+            <div className="guide-row"><span className="guide-key">RELATIVE INTEL</span><span className="guide-val">Tactical reference panel: distance from active sector to Santo Domingo, elevation vs. Lima baseline (1550m), and temperature vs. current Valencia reading.</span></div>
+          </div>
+
+          {/* SYS.CONFIG */}
+          <div className="guide-section">
+            <div className="guide-section-hdr">◈ SYS.CONFIG</div>
+            <p className="guide-p">Open via COMMS MODULE (radio panel, left side) → <b>⚙ SYS.CONFIG</b> tab.</p>
+            <div className="guide-row"><span className="guide-key">AUDIO SOURCE</span><span className="guide-val">Switch between STREAM (Radio Browser), FILE (local audio), URL (stream URL), and SOUNDCLOUD modes.</span></div>
+            <div className="guide-row"><span className="guide-key">LOCATION</span><span className="guide-val">Shows your active sector. Change it from the SECTOR SELECT panel above.</span></div>
+            <div className="guide-row"><span className="guide-key">WINDY API KEY</span><span className="guide-val">Get a free key at api.windy.com/keys. Paste it here to unlock AUTO-DISCOVER in live cams (finds nearby cameras automatically). Your key is saved in the browser.</span></div>
+            <div className="guide-row"><span className="guide-key">DEPLOYMENT</span><span className="guide-val">Reminder that YouTube cams need HTTPS. Windy and MJPEG work without hosting.</span></div>
+          </div>
+
+          {/* HOSTING */}
+          <div className="guide-section">
+            <div className="guide-section-hdr">◈ HOSTING // GOING LIVE</div>
+            <p className="guide-p">
+              To enable YouTube live cams and share the app with others, host it for free on
+              <span className="amb"> GitHub Pages</span>, <span className="amb">Netlify</span>, or <span className="amb">Cloudflare Pages</span> — each takes about 5 minutes.
+              The included <b>GitmoRadio-GitHub-Pages-Guide.md</b> file walks you through the GitHub Pages process step by step.
+              Once live, all features including YouTube embeds will work.
+            </p>
+          </div>
+
+          <div className="guide-hint">PRESS <span className="guide-kbd">?</span> TO TOGGLE THIS GUIDE · <span className="guide-kbd">ESC</span> TO CLOSE</div>
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── HEADER ──────────────────────────────────────────────────────────────────
 
-function Header({ clock, location }) {
+function Header({ clock, location, onGuide }) {
   return (
     <header className="header">
       <div className="header-logo">GITMO <span>RADIO</span></div>
@@ -501,9 +665,12 @@ function Header({ clock, location }) {
           {Math.abs(location.lat).toFixed(3)}°{location.lat>=0?'N':'S'} / {Math.abs(location.lon).toFixed(3)}°{location.lon>=0?'E':'W'}
         </div>
       </div>
-      <div className="header-clock">
-        <div>{clock}</div>
-        <div style={{color:'var(--g3)',fontSize:'9px',letterSpacing:'2px'}}>ZULU TIME <span className="blink">█</span></div>
+      <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+        <button className="btn-guide" onClick={onGuide} title="Operator Guide (press ?)">? GUIDE</button>
+        <div className="header-clock">
+          <div>{clock}</div>
+          <div style={{color:'var(--g3)',fontSize:'9px',letterSpacing:'2px'}}>ZULU TIME <span className="blink">█</span></div>
+        </div>
       </div>
     </header>
   );
@@ -1452,6 +1619,17 @@ function LiveCamPanel({ camConfig, setCamConfig, location, onAutoDiscover, windy
 // ─── ROOT COMPONENT ──────────────────────────────────────────────────────────
 
 function GitmoRadio() {
+  // ── Guide panel
+  const [showGuide, setShowGuide] = useState(false);
+  useEffect(() => {
+    const onKey = e => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.key === '?') setShowGuide(v => !v);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   // ── Location (sector preset or custom)
   const [location, setLocation] = useState(SECTORS[0]);
 
@@ -1688,7 +1866,8 @@ function GitmoRadio() {
   return (
     <div className="app">
       <audio ref={audioRef} preload="none"/>
-      <Header clock={clock} location={location}/>
+      {showGuide && <GuidePanel onClose={() => setShowGuide(false)}/>}
+      <Header clock={clock} location={location} onGuide={() => setShowGuide(v => !v)}/>
       <IncidentCounter days={incidentDays} onReset={resetIncident} flashing={incidentFlash}/>
       <div className="main-grid">
 
