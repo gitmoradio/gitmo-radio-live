@@ -87,10 +87,39 @@
   .incident-reset { background:none; border:1px solid #5a3800; color:#cc8800; font-family:var(--font); font-size:10px; padding:1px 8px; cursor:pointer; letter-spacing:2px; transition:all .12s; }
   .incident-reset:hover { background:#3a2000; border-color:var(--amb); color:var(--amb); }
 
+  /* ── DASHBOARD BAR ── */
+  .dash-bar {
+    display:flex; align-items:center; gap:3px; flex-shrink:0;
+    padding:3px 8px; background:#000d22; border-bottom:1px solid #002266;
+  }
+  .dash-bar-label { font-size:9px; color:#004400; letter-spacing:2px; margin-right:4px; }
+  .dash-layout-btn {
+    background:none; border:1px solid #002266; color:#005599;
+    font-family:var(--font); font-size:9px; padding:2px 6px;
+    cursor:pointer; letter-spacing:1px; transition:all .1s;
+  }
+  .dash-layout-btn:hover { background:#002266; color:var(--bc); }
+  .dash-layout-btn.active { border-color:var(--g3); color:var(--g); }
+
+  /* ── PANEL EXPAND / FULLSCREEN ── */
+  .panel-expand-btn {
+    background:none; border:none; color:#004488; font-family:var(--font);
+    font-size:12px; cursor:pointer; padding:0 3px; line-height:1;
+    transition:color .1s; flex-shrink:0;
+  }
+  .panel-expand-btn:hover { color:var(--bc); }
+  .panel-fullscreen {
+    position:fixed !important; inset:0 !important;
+    z-index:998 !important; overflow:hidden !important;
+    border:none !important; border-radius:0 !important; margin:0 !important;
+    display:flex !important; flex-direction:column !important;
+  }
+  .panel-fullscreen .panel-expand-btn { color:var(--amb); }
+
   /* ── MAIN GRID ── */
   .main-grid {
     display:grid;
-    grid-template-columns:252px 1fr 286px;
+    grid-template-columns:var(--dash-cols, 252px 1fr 286px);
     gap:3px; padding:3px;
     flex:1; overflow:hidden; min-height:0;
   }
@@ -470,6 +499,29 @@ const GENRES = [
   { id:'CHILL', label:'CHILLOUT',    tag:'chillout' },
   { id:'DNB',   label:'DRUM+BASS',   tag:'drum and bass' },
   { id:'CLAS',  label:'CLASSICAL',   tag:'classical' },
+  // Curated talk/culture streams — bypasses Radio Browser, uses hardcoded URLs directly.
+  { id:'TALK', label:'TALK+CULTURE', tag:'talk',
+    stations: [
+      { stationuuid:'t-nprnews',  name:'NPR NEWS',          url_resolved:'https://npr-ice.streamguys1.com/live.mp3',                        country:'US', tags:'news talk' },
+      { stationuuid:'t-bbc-ws',   name:'BBC WORLD SERVICE', url_resolved:'https://stream.live.vc.bbcmedia.co.uk/bbc_world_service',         country:'GB', tags:'news talk' },
+      { stationuuid:'t-bbc-r4',   name:'BBC RADIO 4',       url_resolved:'https://stream.live.vc.bbcmedia.co.uk/bbc_radio4',               country:'GB', tags:'talk culture' },
+      { stationuuid:'t-franceint',name:'FRANCE INTER',       url_resolved:'https://icecast.radiofrance.fr/franceinter-hifi.aac',            country:'FR', tags:'talk culture' },
+      { stationuuid:'t-francecul',name:'FRANCE CULTURE',     url_resolved:'https://icecast.radiofrance.fr/franceculture-hifi.aac',          country:'FR', tags:'culture' },
+      { stationuuid:'t-rfi-fr',   name:'RFI MONDE (FR)',     url_resolved:'https://rfimonde64k.ice.infomaniak.ch/rfimonde-64.mp3',          country:'FR', tags:'news talk' },
+      { stationuuid:'t-rfi-en',   name:'RFI ENGLISH',        url_resolved:'https://rfieng64k.ice.infomaniak.ch/rfieng-64.mp3',             country:'FR', tags:'news talk' },
+      { stationuuid:'t-dw',       name:'DEUTSCHE WELLE',     url_resolved:'https://dw-europe.cdn.iono.fm/dw-english.mp3',                  country:'DE', tags:'news talk' },
+      { stationuuid:'t-rnz',      name:'RADIO NZ NATIONAL',  url_resolved:'https://radionz-ice.streamguys1.com/national.mp3',              country:'NZ', tags:'talk culture' },
+    ]
+  },
+];
+
+// Dashboard layout presets — change column proportions to suit what you're focused on.
+const DASH_LAYOUTS = [
+  { id:'balanced', label:'BALANCED', cols:'240px 1fr 300px' },
+  { id:'map',      label:'MAP+',     cols:'190px 2fr 230px' },
+  { id:'cam',      label:'CAM+',     cols:'190px 1fr 420px' },
+  { id:'comms',    label:'COMMS+',   cols:'300px 1fr 220px' },
+  { id:'center',   label:'CENTER',   cols:'170px 3fr 170px' },
 ];
 
 const WMO = {
@@ -966,7 +1018,7 @@ function SysConfig({ audioConfig, location, windyConfig }) {
 
 // ─── RADIO PLAYER ────────────────────────────────────────────────────────────
 
-function RadioPlayer({ station, stations, playing, onToggle, volume, onVolume, onStation, vuBars, audioConfig, genre, onGenre, location, windyConfig }) {
+function RadioPlayer({ station, stations, playing, onToggle, volume, onVolume, onStation, vuBars, audioConfig, genre, onGenre, location, windyConfig, isExpanded, onExpand }) {
   const [tab, setTab] = useState('stations');
 
   const nowLabel = useMemo(() => {
@@ -978,10 +1030,11 @@ function RadioPlayer({ station, stations, playing, onToggle, volume, onVolume, o
   const showAudioControls = audioConfig.mode !== 'sc';
 
   return (
-    <div className="panel radio-panel">
+    <div className={`panel radio-panel${isExpanded?' panel-fullscreen':''}`}>
       <div className="panel-hdr panel-hdr-amber">
         <span>◈ COMMS MODULE</span>
         <span style={{fontSize:'9px',color:'#7a5500'}}>{audioConfig.mode.toUpperCase()} MODE</span>
+        <button className="panel-expand-btn" onClick={onExpand} title={isExpanded?'Restore':'Expand'} style={{color:isExpanded?'var(--amb)':'#7a5500'}}>{isExpanded?'⊠':'↗'}</button>
       </div>
 
       <div className="comms-tab-strip">
@@ -1123,10 +1176,17 @@ function RelativeIntel({ location, sectorElev, valenciaTemp }) {
 
 // ─── WEATHER PANEL ───────────────────────────────────────────────────────────
 
-function WeatherPanel({ weather, location, sectorElev, valenciaTemp }) {
+function WeatherPanel({ weather, location, sectorElev, valenciaTemp, isExpanded, onExpand }) {
+  const wxHdr = (sub) => (
+    <div className="panel-hdr">
+      <span>◈ CONDITIONS · OPEN-METEO</span>
+      <span style={{fontSize:'9px'}}>{sub||location.id}</span>
+      <button className="panel-expand-btn" onClick={onExpand} title={isExpanded?'Restore':'Expand'}>{isExpanded?'⊠':'↗'}</button>
+    </div>
+  );
   if (!weather) return (
-    <div className="panel" style={{flex:1}}>
-      <div className="panel-hdr"><span>◈ CONDITIONS · OPEN-METEO</span><span style={{fontSize:'9px'}}>{location.id}</span></div>
+    <div className={`panel${isExpanded?' panel-fullscreen':''}`} style={isExpanded?{}:{flex:1}}>
+      {wxHdr(location.id)}
       <div className="panel-body">
         <div style={{color:'var(--g3)',fontSize:'11px',letterSpacing:'2px',marginBottom:'10px'}}>ACQUIRING DATA<span className="blink">_</span></div>
         <RelativeIntel location={location} sectorElev={sectorElev} valenciaTemp={valenciaTemp}/>
@@ -1134,8 +1194,8 @@ function WeatherPanel({ weather, location, sectorElev, valenciaTemp }) {
     </div>
   );
   if (weather.error) return (
-    <div className="panel" style={{flex:1}}>
-      <div className="panel-hdr">◈ CONDITIONS · OPEN-METEO</div>
+    <div className={`panel${isExpanded?' panel-fullscreen':''}`} style={isExpanded?{}:{flex:1}}>
+      {wxHdr()}
       <div className="panel-body">
         <div style={{color:'var(--red)',fontSize:'11px',letterSpacing:'2px',marginBottom:'10px'}}>SIGNAL LOST</div>
         <RelativeIntel location={location} sectorElev={sectorElev} valenciaTemp={valenciaTemp}/>
@@ -1156,11 +1216,8 @@ function WeatherPanel({ weather, location, sectorElev, valenciaTemp }) {
   const locationWithTemp = {...location, _temp: tempC };
 
   return (
-    <div className="panel" style={{flex:1,overflowY:'auto'}}>
-      <div className="panel-hdr">
-        <span>◈ CONDITIONS · OPEN-METEO</span>
-        <span style={{fontSize:'9px'}}>{location.id}</span>
-      </div>
+    <div className={`panel${isExpanded?' panel-fullscreen':''}`} style={isExpanded?{}:{flex:1,overflowY:'auto'}}>
+      {wxHdr(location.id)}
       <div className="panel-body">
         <div style={{display:'flex',alignItems:'flex-end',gap:'8px',marginBottom:'2px'}}>
           <div className="wx-temp">{tempC}°</div>
@@ -1215,15 +1272,19 @@ function WeatherPanel({ weather, location, sectorElev, valenciaTemp }) {
 
 // ─── WINDY MAP ───────────────────────────────────────────────────────────────
 
-function WindyMap({ location }) {
+function WindyMap({ location, isExpanded, onExpand }) {
   const src = useMemo(() => {
     const { lat, lon } = location;
     return `https://embed.windy.com/embed.html?lat=${lat}&lon=${lon}&zoom=5&level=surface&overlay=wind&product=ecmwf&menu=&message=true&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1`;
   }, [location.lat, location.lon]);
 
   return (
-    <div className="panel windy-frame" style={{flex:'1 1 55%'}}>
-      <div className="panel-hdr"><span>◈ TACTICAL MAP · WINDY.COM</span><span style={{fontSize:'9px'}}>ECMWF · SURFACE WIND</span></div>
+    <div className={`panel windy-frame${isExpanded?' panel-fullscreen':''}`} style={isExpanded?{}:{flex:'1 1 55%'}}>
+      <div className="panel-hdr">
+        <span>◈ TACTICAL MAP · WINDY.COM</span>
+        <span style={{fontSize:'9px'}}>ECMWF · SURFACE WIND</span>
+        <button className="panel-expand-btn" onClick={onExpand} title={isExpanded?'Restore':'Expand'}>{isExpanded?'⊠':'↗'}</button>
+      </div>
       <div className="windy-iframe-wrap">
         <iframe src={src} title="Windy Map" allowFullScreen/>
         <div className="map-overlay-corner tl">{location.id} // {location.name}</div>
@@ -1235,7 +1296,7 @@ function WindyMap({ location }) {
 
 // ─── RADAR MAP ───────────────────────────────────────────────────────────────
 
-function RadarMap({ location }) {
+function RadarMap({ location, isExpanded, onExpand }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const layerRef = useRef(null);
@@ -1290,10 +1351,11 @@ function RadarMap({ location }) {
   const ts = frames[idx] ? new Date(frames[idx].time*1000).toUTCString().replace(/.*,\s/,'').replace(' GMT','Z') : '--';
 
   return (
-    <div className="panel radar-frame" style={{flex:'1 1 40%'}}>
+    <div className={`panel radar-frame${isExpanded?' panel-fullscreen':''}`} style={isExpanded?{}:{flex:'1 1 40%'}}>
       <div className="panel-hdr">
         <span>◈ RADAR · RAINVIEWER</span>
         <span style={{fontSize:'9px'}}>{frames.length>0?`FRM ${idx+1}/${frames.length}`:'LOADING'}</span>
+        <button className="panel-expand-btn" onClick={onExpand} title={isExpanded?'Restore':'Expand'}>{isExpanded?'⊠':'↗'}</button>
       </div>
       <div ref={containerRef} className="radar-map-div" style={{flex:1,minHeight:0}}/>
       <div className="radar-controls">
@@ -1417,7 +1479,7 @@ const CAM_TYPES = [
   { id:'iframe',  label:'IFRAME',  placeholder:'https://embed-url…' },
 ];
 
-function LiveCamPanel({ camConfig, setCamConfig, location, onAutoDiscover, windyKey }) {
+function LiveCamPanel({ camConfig, setCamConfig, location, onAutoDiscover, windyKey, isExpanded, onExpand }) {
   const [selectedSlot, setSelectedSlot] = useState(0);
   const [urlInput, setUrlInput]         = useState('');
   const [activeType, setActiveType]     = useState('none');
@@ -1498,12 +1560,13 @@ function LiveCamPanel({ camConfig, setCamConfig, location, onAutoDiscover, windy
   const typeInfo  = CAM_TYPES.find(t => t.id === activeType) || CAM_TYPES[0];
 
   return (
-    <div className="panel livecam-panel">
+    <div className={`panel livecam-panel${isExpanded?' panel-fullscreen':''}`}>
 
       {/* Header */}
       <div className="panel-hdr">
         <span>◈ LIVECAM</span>
         <span style={{color:'var(--red)',fontSize:'9px',animation:'blink 1.5s step-end infinite',marginLeft:'auto'}}>● REC</span>
+        <button className="panel-expand-btn" onClick={onExpand} title={isExpanded?'Restore':'Expand'}>{isExpanded?'⊠':'↗'}</button>
       </div>
 
       {/* Pane count + layout selector */}
@@ -1616,6 +1679,28 @@ function LiveCamPanel({ camConfig, setCamConfig, location, onAutoDiscover, windy
   );
 }
 
+// ─── DASHBOARD BAR ───────────────────────────────────────────────────────────
+
+function DashboardBar({ dashLayout, onLayout, expandedPanel }) {
+  return (
+    <div className="dash-bar">
+      <span className="dash-bar-label">LAYOUT</span>
+      {DASH_LAYOUTS.map(l => (
+        <button key={l.id}
+          className={`dash-layout-btn${dashLayout===l.id?' active':''}`}
+          onClick={() => onLayout(l.id)}
+          title={l.cols}
+        >{l.label}</button>
+      ))}
+      {expandedPanel && (
+        <span style={{marginLeft:'auto',fontSize:'9px',color:'var(--amb)',letterSpacing:'1px',animation:'blink 1.5s step-end infinite'}}>
+          ↗ {expandedPanel.toUpperCase()} · ESC TO RESTORE
+        </span>
+      )}
+    </div>
+  );
+}
+
 // ─── ROOT COMPONENT ──────────────────────────────────────────────────────────
 
 function GitmoRadio() {
@@ -1684,6 +1769,19 @@ function GitmoRadio() {
     setIncidentTs(now); setIncidentFlash(true); setTimeout(()=>setIncidentFlash(false),900);
   };
 
+  // ── Dashboard layout + panel expand
+  const [dashLayout, setDashLayout] = useState(() => { try { return localStorage.getItem('gitmo_dash_layout')||'balanced'; } catch { return 'balanced'; } });
+  useEffect(() => { try { localStorage.setItem('gitmo_dash_layout', dashLayout); } catch {} }, [dashLayout]);
+  const dashCols = DASH_LAYOUTS.find(l=>l.id===dashLayout)?.cols || '240px 1fr 300px';
+
+  const [expandedPanel, setExpandedPanel] = useState(null); // null | 'radio'|'map'|'radar'|'weather'|'cam'
+  const toggleExpand = (id) => setExpandedPanel(p => p===id ? null : id);
+  useEffect(() => {
+    const h = e => { if(e.key==='Escape') setExpandedPanel(null); };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, []);
+
   // ── UTC clock
   useEffect(() => {
     const tick=()=>{ const n=new Date(); setClock(n.toUTCString().replace(/^.*?,\s/,'').replace(' GMT',' UTC')); };
@@ -1712,10 +1810,18 @@ function GitmoRadio() {
       .catch(()=>{});
   },[]);
 
-  // ── Radio Browser on genre change
+  // ── Radio Browser on genre change (curated genres skip the API entirely)
   useEffect(() => {
     setStations([]); setCurStation(null);
     if (audioMode==='stream' && audioRef.current) { audioRef.current.pause(); audioRef.current.src=''; setPlaying(false); }
+
+    // Genres with a hardcoded `stations` array bypass Radio Browser
+    if (genre.stations) {
+      setStations(genre.stations);
+      if (genre.stations.length > 0) setCurStation(genre.stations[0]);
+      return;
+    }
+
     const mirrors=['de1','nl1','at1'];
     const tryFetch=(attempts)=>{
       if (!attempts.length) return;
@@ -1869,7 +1975,8 @@ function GitmoRadio() {
       {showGuide && <GuidePanel onClose={() => setShowGuide(false)}/>}
       <Header clock={clock} location={location} onGuide={() => setShowGuide(v => !v)}/>
       <IncidentCounter days={incidentDays} onReset={resetIncident} flashing={incidentFlash}/>
-      <div className="main-grid">
+      <DashboardBar dashLayout={dashLayout} onLayout={setDashLayout} expandedPanel={expandedPanel}/>
+      <div className="main-grid" style={{'--dash-cols': dashCols}}>
 
         {/* ── LEFT ── */}
         <div className="left-col">
@@ -1887,24 +1994,31 @@ function GitmoRadio() {
             genre={genre} onGenre={handleGenreChange}
             location={location}
             windyConfig={windyConfig}
+            isExpanded={expandedPanel==='radio'}
+            onExpand={() => toggleExpand('radio')}
           />
         </div>
 
         {/* ── CENTER ── */}
         <div className="center-col">
-          <WindyMap location={location}/>
-          <RadarMap location={location}/>
+          <WindyMap location={location}
+            isExpanded={expandedPanel==='map'} onExpand={() => toggleExpand('map')}/>
+          <RadarMap location={location}
+            isExpanded={expandedPanel==='radar'} onExpand={() => toggleExpand('radar')}/>
         </div>
 
         {/* ── RIGHT ── */}
         <div className="right-col">
-          <WeatherPanel weather={weather} location={location} sectorElev={sectorElev} valenciaTemp={valenciaTemp}/>
+          <WeatherPanel weather={weather} location={location} sectorElev={sectorElev} valenciaTemp={valenciaTemp}
+            isExpanded={expandedPanel==='weather'} onExpand={() => toggleExpand('weather')}/>
           <LiveCamPanel
             camConfig={camConfig}
             setCamConfig={setCamConfig}
             location={location}
             onAutoDiscover={autoDiscoverCams}
             windyKey={windyKey}
+            isExpanded={expandedPanel==='cam'}
+            onExpand={() => toggleExpand('cam')}
           />
         </div>
 
