@@ -1837,11 +1837,10 @@ function GitmoRadio() {
     tryFetch([...mirrors].sort(()=>Math.random()-.5));
   }, [genre]);
 
-  // ── Handle sector selection (cam slots are NOT reset — user manages them)
+  // ── Handle sector selection — location only, audio is fully independent
   const handleSectorSelect = (s) => {
     setLocation(s);
-    const defaultGenre = GENRES.find(g => g.tag === s.radioTag);
-    if (defaultGenre) setGenre(defaultGenre);
+    // NOTE: do NOT touch genre/stations/playing here. Radio is decoupled from location.
   };
 
   // ── Handle custom location (geocoded city or GPS)
